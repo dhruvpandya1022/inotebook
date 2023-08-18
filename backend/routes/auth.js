@@ -11,16 +11,18 @@ const fetchuser = require('../middleware/fetchuser');
 router.post('/createuser', [
     body('name', 'Enter Valid Name').isLength({min: 3}),
     body('email', 'Enter Valid Email').isEmail(),
-    body('password').isLength({min: 8}),
+    body('password').isLength({min: 5}),
 ], async (req, res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+    let success = false;
     try{
         let user = await User.findOne({email: req.body.email});
         if(user) {
-            return res.status(400).json({error: "Sorry a user with this email id already exists"})
+            success = false;
+            return res.status(400).json({success, error: "Sorry a user with this email id already exists"})
         }
         const salt = await bcrypt.genSalt(10);
         const secPass = await bcrypt.hash( req.body.password, salt);
@@ -37,7 +39,8 @@ router.post('/createuser', [
         const authtoken = jwt.sign(data, JWT_SECRET);
 
         // res.json(user)
-        res.json({authtoken})
+        success = true;
+        res.json({success, authtoken})
 
         // }).then(user => res.json(user))
         // .catch(err => {console.log(err)
@@ -79,7 +82,8 @@ router.post('/login', [
             }
         }
         const authtoken = jwt.sign(data, JWT_SECRET);
-        success = true
+        success = true;
+        
         res.json({success, authtoken})
     } 
     catch(error) {
